@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="在线德州扑克胜率计算器：支持 2-10 位玩家实时增减，全部计算在浏览器本地完成">
+  <title>德州扑克胜率计算器</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>德州扑克胜率计算器</h1>
+    <span id="modeBadge" class="badge" aria-live="polite">—</span>
+  </header>
+
+  <main class="container">
+    <section class="panel" aria-label="公共牌">
+      <div class="section-head">
+        <h2>公牌</h2>
+        <button id="clearBoard" class="ghost-btn" type="button">清空</button>
+      </div>
+      <div id="boardRow" class="card-row board-row"></div>
+    </section>
+
+    <section class="panel" aria-label="玩家">
+      <div class="section-head">
+        <h2>玩家</h2>
+      </div>
+      <div id="playerList"></div>
+      <button id="addPlayer" class="add-btn" type="button">＋ 添加玩家</button>
+    </section>
+
+    <footer class="foot">
+      全部计算在浏览器本地完成 · 翻牌前及任意局面支持 2-10 位玩家
+    </footer>
+  </main>
+
+  <div id="pickerOverlay" class="overlay" hidden>
+    <div id="pickerSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+      <div class="sheet-head">
+        <span id="pickerTitle" class="sheet-title">选择一张牌</span>
+        <button id="pickerClose" class="ghost-btn" type="button">关闭</button>
+      </div>
+      <div id="pickerGrid" class="picker-grid"></div>
+      <div class="sheet-foot">
+        <button id="pickerClear" class="ghost-btn" type="button">清除本张</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/cards.js"></script>
+  <script src="js/evaluator.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
