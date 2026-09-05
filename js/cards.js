@@ -62,9 +62,10 @@
       return suit === 1 || suit === 2;
     },
 
-    /* 校验 players/board 结构，非法时抛出带中文信息的 Error。
-     * players: [[code|null, code|null], ...]；board: [code|null, ...] 长度 0..5 */
-    validateInputs: function (players, board) {
+    /* 校验 players/board/deadCards 结构，非法时抛出带中文信息的 Error。
+     * players: [[code|null, code|null], ...]；board: [code|null, ...] 长度 0..5；
+     * deadCards: [code, ...] 可选，死牌（不参与计算的玩家已亮出的牌），须与所有已知牌互不重复 */
+    validateInputs: function (players, board, deadCards) {
       if (!Array.isArray(players) || players.length < MIN_PLAYERS) {
         throw new Error("至少需要 " + MIN_PLAYERS + " 个玩家");
       }
@@ -86,6 +87,11 @@
       }
       for (var b = 0; b < board.length; b++) {
         mark(seen, board[b], "公牌");
+      }
+      if (deadCards) {
+        for (var d = 0; d < deadCards.length; d++) {
+          mark(seen, deadCards[d], "死牌");
+        }
       }
     },
   };

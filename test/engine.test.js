@@ -224,4 +224,34 @@ module.exports = function (ctx) {
     assert(!res.provisional, "终值无预览标记");
     assertClose(res.players[0].equity, 0.812555, 1e-6, "AA 精确值");
   });
+
+  test("死牌：从牌堆移除，枚举规模与概率随之改变", function () {
+    // V1 河牌场景 + 死牌 Kh：剩余 44 张变 43，KK 只剩 Ks 一张救命牌
+    var r = finish(Engine.createExactTask(
+      AA_KK, [C("2c"), C("7h"), C("9d"), C("Js")], { deadCards: [C("Kh")] }
+    ));
+    assertEq(r.totalBoards, 43, "局面数（44 − 1 死牌）");
+    assertClose(r.players[0].equity, 42 / 43, 1e-6, "AA equity");
+    assertClose(r.players[1].equity, 1 / 43, 1e-6, "KK equity（仅剩 Ks 一张）");
+    // 对照：无死牌时 AA = 42/44 ≈ 0.9545，死牌使 AA 升至 42/43 ≈ 0.9767
+  });
+
+  test("死牌校验：与已知牌重复或非法编码抛错", function () {
+    var threw = 0;
+    try { Engine.createExactTask(AA_KK, [], { deadCards: [C("As")] }); } catch (e) { threw++; }
+    assertEq(threw, 1, "死牌与手牌重复应抛错");
+    try { Engine.createExactTask(AA_KK, [], { deadCards: [C("2c"), C("2c")] }); } catch (e) { threw++; }
+    assertEq(threw, 2, "死牌自身重复应抛错");
+    try { Engine.createExactTask(AA_KK, [], { deadCards: [99] }); } catch (e) { threw++; }
+    assertEq(threw, 3, "死牌非法编码应抛错");
+  });
+
+  test("createTask 透传死牌（MC 路径，引擎 API 保留）", function () {
+    var r = finish(Engine.createTask(
+      [[C("As"), null], [C("Kd"), C("Kc")]], [],
+      { seed: 11, minIters: 20000, maxIters: 20000, deadCards: [C("Qs"), C("Qh")] }
+    ));
+    assertEq(r.mode, "mc", "模式");
+    assertClose(sumEquity(r), 1, 1e-9, "equity 总和");
+  });
 };

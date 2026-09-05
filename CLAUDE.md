@@ -32,6 +32,7 @@ python3 server.py [端口] [地址]   # 静态托管，默认 0.0.0.0:8000（对
 - `Engine.createTask(players, board)` 是唯一入口，内部完成全部计算策略：所有玩家手牌已知 → 精确枚举（含翻牌前）；任一玩家缺牌 → 蒙特卡洛；精确枚举评估次数 ≥ `PREVIEW_EVALS`(50 万) 先跑 100ms MC 预览（result 带 `provisional` 标记）再无缝切换；≥ `EXACT_BUDGET`(600 万) 降级 MC。app.js **不做任何策略决策**，只负责 debounce、代际取消（generation）、按 result() 形状渲染。
 - 任务对象接口：`runSlice(deadlineTs)` 可暂停恢复（true=完成）、`result()` 运行中返回部分结果/未开始返回 null、`progress()` 仅在 result() 为 null 时有意义。app.js 用 MessageChannel 泵以 12ms 分片驱动（勿改回 setTimeout——嵌套 4ms 钳制）。
 - **全部玩家手牌未指定 ⇒ 玩家可交换，胜率精确等于 1/P**（与公牌无关），引擎直接返回精确值（`uniform: true`），win/tie 仍由模拟估计并取玩家间平均。这是数学事实，不是模拟估计，勿"修复"回模拟值。
+- **UI 计算门槛与参与规则**：app.js 在**至少 2 位玩家手牌齐全（2 张）**时启动计算（`completeIndexes()` 门控，不论桌人数）；只对手牌齐全的玩家计算，未齐玩家的已选牌经 `opts.deadCards` 作为**死牌**移出牌堆。因此页面交互只会走精确枚举（MC 仅作重枚举预览），MC 主路径与全随机分支仅作为引擎 API 保留（测试覆盖）。
 
 **7 张牌评估器**（js/evaluator.js）：掩码状态机（s1–s4 = 恰好出现 k 次的 rank 集合）+ 3 张 8192 项表（STR/POP/TOP5），分数 `(cat<<20)|踢脚位` 可直接比较。7 张牌内同花不可能与四条/葫芦共存，故同花最先判定。**7 张参数的手工展开是刻意为之的热路径优化**（实测 2600 万次/秒，循环化慢 14–53%）——改动前先基准测试。测试向量（V1–V6）是 JS 与 Python 双实现对拍的精确值，由 `test/oracle.py` 可独立复核；校验和 `37575761920` 依赖牌编码顺序，改编码必须同步 oracle.py。
 
