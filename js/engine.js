@@ -57,9 +57,10 @@
   /* 校验并展开输入：
    * holes: Int32Array(2P) 玩家手牌（-1 = 未知）
    * b:     Int32Array(5) 公牌（-1 = 未知；board 不足 5 张的部分视为未知）
+   * deadCards: 可选，死牌（不参与计算的玩家已亮出的牌）——标记为已知，从牌堆移除
    * holeUnknown/boardUnknown: 待填槽位下标；avail: 未见过的牌 */
-  function prepare(players, board) {
-    global.Cards.validateInputs(players, board);
+  function prepare(players, board, deadCards) {
+    global.Cards.validateInputs(players, board, deadCards);
     var P = players.length;
     var holes = new Int32Array(2 * P);
     var b = new Int32Array(5);
@@ -87,9 +88,16 @@
         known[bc] = true;
       }
     }
+    if (deadCards) {
+      for (var d = 0; d < deadCards.length; d++) known[deadCards[d]] = true;
+    }
     var avail = [];
     for (var c2 = 0; c2 < 52; c2++) if (!known[c2]) avail.push(c2);
     return { P: P, holes: holes, b: b, holeUnknown: holeUnknown, boardUnknown: boardUnknown, avail: avail };
+  }
+
+  function optsDead(opts) {
+    return opts && opts.deadCards ? opts.deadCards : undefined;
   }
 
   /* 单局结算：更新累计量（exact 与 MC 共用逻辑） */
@@ -112,8 +120,8 @@
 
   /* ---------- 模式选择 ---------- */
 
-  function classify(players, board) {
-    var p = prepare(players, board);
+  function classify(players, board, opts) {
+    var p = prepare(players, board, optsDead(opts));
     var unknownHoles = p.holeUnknown.length;
     var exactBoards = nCk(p.avail.length, p.boardUnknown.length);
     var exactEvals = exactBoards * p.P;
@@ -128,8 +136,8 @@
 
   /* ---------- 精确枚举任务 ---------- */
 
-  function createExactTask(players, board) {
-    var p = prepare(players, board);
+  function createExactTask(players, board, opts) {
+    var p = prepare(players, board, optsDead(opts));
     if (p.holeUnknown.length !== 0) throw new Error("精确枚举要求所有玩家手牌已知");
     var P = p.P, holes = p.holes, b = p.b;
     var avail = p.avail, slots = p.boardUnknown;
@@ -183,7 +191,7 @@
 
   function createMcTask(players, board, opts) {
     opts = opts || {};
-    var p = prepare(players, board);
+    var p = prepare(players, board, optsDead(opts));
     var P = p.P, holes = p.holes, b = p.b;
     var avail = p.avail, holeSlots = p.holeUnknown, boardSlots = p.boardUnknown;
     var L = avail.length;
@@ -292,19 +300,20 @@
   /* ---------- 组合任务（对外的统一入口） ---------- */
 
   function createTask(players, board, opts) {
-    var cls = classify(players, board);
+    var cls = classify(players, board, opts);
     if (cls.mode === "mc") return createMcTask(players, board, opts);
-    if (cls.exactEvals < PREVIEW_EVALS) return createExactTask(players, board);
+    if (cls.exactEvals < PREVIEW_EVALS) return createExactTask(players, board, opts);
     // 重枚举：先出 100ms 蒙特卡洛预览，随后无缝切换到精确枚举
     var preview = createMcTask(players, board, {
       budgetMs: 100, minIters: 5000, maxIters: 60000, seTarget: 0,
+      deadCards: optsDead(opts),
     });
     var main = null;
     return {
       runSlice: function (deadlineTs) {
         if (!main) {
           if (!preview.runSlice(deadlineTs)) return false;
-          main = createExactTask(players, board);
+          main = createExactTask(players, board, opts);
         }
         return main.runSlice(deadlineTs);
       },

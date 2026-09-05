@@ -18,6 +18,7 @@
     picker: null,  // { type: "hole", player, slot } | { type: "board", slot }
     generation: 0,
     task: null,    // { gen, task }
+    resultMap: [], // resultMap[j] = 第 j 个计算结果对应的玩家行下标（只算手牌齐全的玩家）
   };
 
   /* ---------- DOM 引用 ---------- */
@@ -136,7 +137,7 @@
         );
         if (code === null) {
           btn.classList.add("placeholder");
-          btn.textContent = "随机";
+          btn.textContent = "待选";
         }
         holeWrap.appendChild(btn);
       }
@@ -168,6 +169,7 @@
       equity.textContent = "—";
       var detail = document.createElement("span");
       detail.className = "detail";
+      detail.textContent = detailHint(i);
       nums.appendChild(equity);
       nums.appendChild(detail);
       row.appendChild(nums);
@@ -183,11 +185,20 @@
     els.addPlayer.textContent = full ? "已达上限（" + MAX_PLAYERS + " 位玩家）" : "＋ 添加玩家";
   }
 
+  function isIncomplete(i) {
+    var c = state.players[i].cards;
+    return c[0] === null || c[1] === null;
+  }
+
+  function detailHint(i) {
+    return isIncomplete(i) ? "补齐 2 张手牌后参与计算" : "";
+  }
+
   function resetResults() {
     for (var i = 0; i < playerEls.length; i++) {
       playerEls[i].fill.style.width = "0%";
       playerEls[i].equity.textContent = "—";
-      playerEls[i].detail.textContent = "";
+      playerEls[i].detail.textContent = detailHint(i);
     }
   }
 
@@ -198,9 +209,9 @@
   }
 
   function applyResult(res) {
-    for (var i = 0; i < res.players.length; i++) {
-      var p = res.players[i];
-      var el = playerEls[i];
+    for (var j = 0; j < res.players.length; j++) {
+      var p = res.players[j];
+      var el = playerEls[state.resultMap[j]];
       if (!el) continue;
       el.fill.style.width = (p.equity * 100).toFixed(1) + "%";
       el.equity.textContent = (p.equity * 100).toFixed(1) + "%";
@@ -216,17 +227,43 @@
     debounceTimer = setTimeout(startCalc, 120);
   }
 
-  function playersState() {
-    return state.players.map(function (p) { return p.cards; });
+  /* 手牌齐全（2 张）的玩家才参与计算，返回其行下标 */
+  function completeIndexes() {
+    var idx = [];
+    for (var i = 0; i < state.players.length; i++) {
+      var c = state.players[i].cards;
+      if (c[0] !== null && c[1] !== null) idx.push(i);
+    }
+    return idx;
   }
 
   function startCalc() {
     state.generation++;
     state.task = null;
     resetResults();
+    var total = state.players.length;
+    var idx = completeIndexes();
+    // 计算门槛：至少 2 位玩家手牌齐全即开始计算（不论桌人数）
+    if (idx.length < 2) {
+      setBadge("等待输入：至少 2 位玩家齐 2 张手牌后开始（" + idx.length + "/" + total + " 已就绪）");
+      return;
+    }
+    // 只对手牌齐全的玩家计算；未参与玩家的已选牌作为死牌移出牌堆
+    // （该牌已被看见，不能再发给其他人）
+    var participants = [], dead = [];
+    for (var i = 0; i < total; i++) {
+      var c = state.players[i].cards;
+      if (!isIncomplete(i)) {
+        participants.push(c);
+      } else {
+        if (c[0] !== null) dead.push(c[0]);
+        if (c[1] !== null) dead.push(c[1]);
+      }
+    }
+    state.resultMap = idx;
     var task;
     try {
-      task = Engine.createTask(playersState(), state.board);
+      task = Engine.createTask(participants, state.board, dead.length ? { deadCards: dead } : undefined);
     } catch (e) {
       setBadge("输入有误：" + e.message);
       return;
