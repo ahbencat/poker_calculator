@@ -1,0 +1,6 @@
+# 本地工具配置（.claude/settings.json 含 API token，严禁入库）
+.claude/
+
+# Python 缓存
+__pycache__/
+*.pyc

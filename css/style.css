@@ -1,0 +1,374 @@
+/* style.css — 移动优先单列布局；≥768px 桌面适配 */
+
+:root {
+  --bg: #eef1f3;
+  --surface: #ffffff;
+  --text: #1c2126;
+  --muted: #6b7480;
+  --border: #d8dee4;
+  --accent: #15803d;
+  --accent-dark: #14532d;
+  --accent-soft: #e7f6ee;
+  --red: #d64545;
+  --shadow: 0 1px 3px rgba(16, 24, 32, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  touch-action: manipulation; /* 防双击缩放 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- 顶栏 ---------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top));
+  background: var(--accent-dark);
+  color: #fff;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #eaf7ef;
+  max-width: 60vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 主体 ---------- */
+
+.container {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+.panel { margin-bottom: 20px; }
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+/* ---------- 牌槽 ---------- */
+
+.card-row {
+  display: flex;
+  gap: 8px;
+}
+
+.board-row .card-slot { width: 15.5%; max-width: 64px; }
+.board-row .street-gap { margin-left: 10px; }
+
+.card-slot {
+  height: 68px;
+  border: 1.5px dashed var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 20px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.card-slot:active { border-color: var(--accent); }
+
+.card-slot.filled {
+  border-style: solid;
+  border-color: #c4cdd5;
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+
+.card-slot.placeholder {
+  font-size: 16px;
+  font-weight: 400;
+  color: #9aa4ad;
+}
+
+.card-rank, .card-suit {
+  display: block;
+  line-height: 1;
+}
+
+.card-suit { font-size: 0.8em; }
+.card-suit.red, .picker-card.red { color: var(--red); }
+
+/* ---------- 玩家 ---------- */
+
+.player {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.player-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-name {
+  font-weight: 600;
+  font-size: 15px;
+  min-width: 3.2em;
+}
+
+.hole-cards {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.hole-cards .card-slot {
+  width: 54px;
+  height: 60px;
+  font-size: 19px;
+}
+
+.remove-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #eef1f3;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.remove-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ---------- 结果 ---------- */
+
+.bar {
+  height: 10px;
+  border-radius: 5px;
+  background: #e8ecef;
+  margin: 12px 0 8px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #1a9a4b, var(--accent));
+  transition: width 0.25s ease;
+}
+
+.nums {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.equity {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 按钮 ---------- */
+
+.ghost-btn {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 16px;
+  padding: 8px 10px;
+  min-height: 44px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.ghost-btn:active { background: var(--accent-soft); }
+
+.add-btn {
+  width: 100%;
+  min-height: 48px;
+  border: 1.5px dashed #b9c3cb;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-btn:active { background: var(--accent-soft); }
+
+.add-btn:disabled {
+  color: var(--muted);
+  border-color: var(--border);
+  cursor: default;
+  background: transparent;
+}
+
+.foot {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- 底部弹层选择器 ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(10, 16, 22, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.overlay[hidden] { display: none; }
+
+.sheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  max-height: 85dvh; /* dvh 支持时动态视口，避免移动端地址栏遮挡 */
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 6px 16px;
+}
+
+.sheet-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 8px 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.picker-card {
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fafbfc;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.picker-card:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.picker-card.selected {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+.sheet-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 12px 8px;
+}
+
+/* ---------- 桌面适配 ---------- */
+
+@media (min-width: 768px) {
+  .container { padding-top: 24px; }
+
+  .overlay { align-items: center; }
+
+  .sheet {
+    width: 420px;
+    border-radius: 16px;
+    max-height: 80vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar-fill, .card-slot { transition: none; }
+}
