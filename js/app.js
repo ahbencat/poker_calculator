@@ -19,6 +19,7 @@
     generation: 0,
     task: null,    // { gen, task }
     resultMap: [], // resultMap[j] = 第 j 个计算结果对应的玩家行下标（只算手牌齐全的玩家）
+    lastApplied: null, // 最近一次渲染到 DOM 的结果（签名跳过重算时用于回放）
   };
 
   /* ---------- DOM 引用 ---------- */
@@ -217,6 +218,7 @@
       el.equity.textContent = (p.equity * 100).toFixed(1) + "%";
       el.detail.textContent = "胜 " + (p.win * 100).toFixed(1) + "% · 平 " + (p.tie * 100).toFixed(1) + "%";
     }
+    state.lastApplied = res;
   }
 
   /* ---------- 调度 ---------- */
@@ -231,41 +233,61 @@
   function completeIndexes() {
     var idx = [];
     for (var i = 0; i < state.players.length; i++) {
-      var c = state.players[i].cards;
-      if (c[0] !== null && c[1] !== null) idx.push(i);
+      if (!isIncomplete(i)) idx.push(i);
     }
     return idx;
   }
 
+  /* 计算输入签名：齐牌玩家的手牌 + 公牌。
+   * 签名不变的操作（增删未参与玩家、给新玩家选第 1 张牌等）不触发重算；
+   * 门槛未达（齐牌玩家 < 2）视作 null 签名，与"从未计算"同态。 */
+  var lastSig = null;
+
+  function calcSignature(participants) {
+    return participants.join(";") + "|" + state.board.join(",");
+  }
+
+  function waitingBadge(ready, total) {
+    return "等待输入：至少 2 位玩家齐 2 张手牌后开始（" + ready + "/" + total + " 已就绪）";
+  }
+
   function startCalc() {
+    var total = state.players.length;
+    var idx = completeIndexes();
+    // participants[j] 与 idx[j] 一一对应（resultMap 行映射依赖此序）
+    var participants = idx.map(function (i) { return state.players[i].cards; });
+    var sig = idx.length < 2 ? null : calcSignature(participants);
+
+    if (sig === lastSig) {
+      // 签名未变：跳过重算，不打断进行中的任务
+      if (sig === null) {
+        setBadge(waitingBadge(idx.length, total));
+        return;
+      }
+      // 行序可能因增删未参与玩家而变化（行 DOM 已重建）→ 刷新映射并回放最近结果
+      state.resultMap = idx;
+      if (state.lastApplied) applyResult(state.lastApplied);
+      return;
+    }
+
+    // 签名变化（含从有效状态跌落门槛）：取消旧任务并清空结果
     state.generation++;
     state.task = null;
     resetResults();
-    var total = state.players.length;
-    var idx = completeIndexes();
-    // 计算门槛：至少 2 位玩家手牌齐全即开始计算（不论桌人数）
-    if (idx.length < 2) {
-      setBadge("等待输入：至少 2 位玩家齐 2 张手牌后开始（" + idx.length + "/" + total + " 已就绪）");
+    state.lastApplied = null;
+    lastSig = sig;
+    if (sig === null) {
+      setBadge(waitingBadge(idx.length, total));
       return;
     }
-    // 只对手牌齐全的玩家计算；未参与玩家的已选牌作为死牌移出牌堆
-    // （该牌已被看见，不能再发给其他人）
-    var participants = [], dead = [];
-    for (var i = 0; i < total; i++) {
-      var c = state.players[i].cards;
-      if (!isIncomplete(i)) {
-        participants.push(c);
-      } else {
-        if (c[0] !== null) dead.push(c[0]);
-        if (c[1] !== null) dead.push(c[1]);
-      }
-    }
+
     state.resultMap = idx;
     var task;
     try {
-      task = Engine.createTask(participants, state.board, dead.length ? { deadCards: dead } : undefined);
+      task = Engine.createTask(participants, state.board);
     } catch (e) {
       setBadge("输入有误：" + e.message);
+      lastSig = null; // 失败不作数：下次调度重试而非签名跳过
       return;
     }
     state.task = { gen: state.generation, task: task };
