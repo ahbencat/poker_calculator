@@ -1,16 +1,13 @@
 /* style.css — 移动优先单列布局；≥768px 桌面适配 */
 
 :root {
-  --bg: #eef1f3;
   --surface: #ffffff;
   --text: #1c2126;
   --muted: #6b7480;
   --border: #d8dee4;
   --accent: #15803d;
-  --accent-dark: #14532d;
   --accent-soft: #e7f6ee;
-  --red: #d64545;
-  --shadow: 0 1px 3px rgba(16, 24, 32, 0.08);
+  --red: #d1332e;
 }
 
 * { box-sizing: border-box; }
@@ -21,7 +18,12 @@ html, body {
 }
 
 body {
-  background: var(--bg);
+  /* 牌桌毛毡：中央受光、四周渐暗，叠加极淡的编织纹理 */
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.02) 0 2px, transparent 2px 4px),
+    radial-gradient(ellipse 130% 100% at 50% 30%, #2f6e50 0%, #245742 45%, #19402f 100%);
+  background-color: #19402f;
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
@@ -48,7 +50,9 @@ button {
   gap: 12px;
   padding: 12px 16px;
   padding-top: calc(12px + env(safe-area-inset-top));
-  background: var(--accent-dark);
+  background: linear-gradient(180deg, #4a3327 0%, #33221a 100%); /* 皮质围栏 */
+  border-bottom: 2px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   color: #fff;
 }
 
@@ -97,8 +101,34 @@ button {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.78);
   letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 公牌区 = 牌桌主区：毛毡台面 + 木质围栏 */
+.table-felt {
+  background: radial-gradient(ellipse at 50% 40%, #3b8060 0%, #2d6549 55%, #245239 100%);
+  border: 3px solid #61412c;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 4px 16px rgba(0, 0, 0, 0.30),
+    0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.table-felt .ghost-btn {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.table-felt .ghost-btn:active { background: rgba(255, 255, 255, 0.12); }
+
+/* 毛毡上的空牌位：半透明凹陷轮廓 */
+.table-felt .card-slot:not(.filled) {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.14);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 /* ---------- 牌槽 ---------- */
@@ -108,10 +138,11 @@ button {
   gap: 8px;
 }
 
-.board-row .card-slot { width: 15.5%; max-width: 64px; }
+.board-row .card-slot { width: 15.5%; max-width: 56px; height: 78px; }
 .board-row .street-gap { margin-left: 10px; }
 
 .card-slot {
+  position: relative;
   height: 68px;
   border: 1.5px dashed var(--border);
   border-radius: 8px;
@@ -125,17 +156,21 @@ button {
   gap: 1px;
   cursor: pointer;
   padding: 0;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease,
+    box-shadow 0.15s ease, transform 0.12s ease;
 }
 
 .card-slot:active { border-color: var(--accent); }
 
+/* 亮出的牌：白卡面 + 左上点数 + 右下花色（略小） */
 .card-slot.filled {
-  border-style: solid;
-  border-color: #c4cdd5;
-  box-shadow: var(--shadow);
+  border: 1px solid #dfe4e8;
+  background: linear-gradient(160deg, #ffffff 0%, #f1f4f6 100%);
+  box-shadow: 0 1px 2px rgba(16, 24, 32, 0.16), 0 4px 10px rgba(16, 24, 32, 0.10);
   color: var(--text);
 }
+
+.card-slot.filled:active { transform: scale(0.97); }
 
 .card-slot.placeholder {
   font-size: 16px;
@@ -143,20 +178,38 @@ button {
   color: #9aa4ad;
 }
 
-.card-rank, .card-suit {
-  display: block;
+.card-corner {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #232a31;
+  pointer-events: none;
 }
 
-.card-suit { font-size: 0.8em; }
-.card-suit.red, .picker-card.red { color: var(--red); }
+/* 点数/花色各自居中于对角区域（左上/右下偏中间），字号撑满区域 */
+.card-corner.rank {
+  top: 0; left: 0;
+  width: 64%; height: 54%;
+  font-size: 28px;
+}
+
+.card-corner.suit {
+  bottom: 0; right: 0;
+  width: 64%; height: 54%;
+  font-size: 24px;
+}
+.card-corner.red { color: var(--red); }
 
 /* ---------- 玩家 ---------- */
 
 .player {
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.96);
   border-radius: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
   padding: 12px;
   margin-bottom: 12px;
 }
@@ -181,7 +234,7 @@ button {
 
 .hole-cards .card-slot {
   width: 54px;
-  height: 60px;
+  height: 76px;
   font-size: 19px;
 }
 
@@ -257,20 +310,20 @@ button {
 .add-btn {
   width: 100%;
   min-height: 48px;
-  border: 1.5px dashed #b9c3cb;
+  border: 1.5px dashed rgba(255, 255, 255, 0.45);
   border-radius: 12px;
   background: transparent;
-  color: var(--accent);
+  color: #eaf7ef;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.add-btn:active { background: var(--accent-soft); }
+.add-btn:active { background: rgba(255, 255, 255, 0.10); }
 
 .add-btn:disabled {
-  color: var(--muted);
-  border-color: var(--border);
+  color: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.20);
   cursor: default;
   background: transparent;
 }
@@ -278,7 +331,7 @@ button {
 .foot {
   text-align: center;
   font-size: 12px;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* ---------- 底部弹层选择器 ---------- */
@@ -322,6 +375,7 @@ button {
 .picker-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  justify-items: center;
   gap: 8px;
   padding: 8px 16px;
   overflow-y: auto;
@@ -329,10 +383,12 @@ button {
 }
 
 .picker-card {
-  height: 44px;
+  position: relative;
+  width: 56px;
+  height: 76px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fafbfc;
+  background: linear-gradient(160deg, #ffffff 0%, #f6f8f9 100%);
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
