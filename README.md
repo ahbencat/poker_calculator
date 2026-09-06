@@ -29,6 +29,7 @@ python3 server.py 8000 127.0.0.1   # 仅本机可访问
 ```
 
 无任何构建步骤与第三方依赖（服务器为 Python 标准库）。
+完整的依赖事实清单与工具链要求见 [docs/dependencies.md](docs/dependencies.md)。
 
 ## 测试
 
