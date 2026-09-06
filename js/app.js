@@ -74,7 +74,20 @@
     updateAddButton();
   }
 
-  /* 牌槽按钮：有牌（code 非 null）时填入点数/花色并标记 filled */
+  /* 牌面内容：左上角点数，右下角花色（略小） */
+  function appendCardFace(btn, code) {
+    var red = Cards.isRedSuit(Cards.suitOf(code)) ? " red" : "";
+    var rank = document.createElement("span");
+    rank.className = "card-corner rank" + red;
+    rank.textContent = Cards.RANK_LABELS[Cards.rankOf(code)];
+    var suit = document.createElement("span");
+    suit.className = "card-corner suit" + red;
+    suit.textContent = Cards.SUIT_GLYPHS[Cards.suitOf(code)];
+    btn.appendChild(rank);
+    btn.appendChild(suit);
+  }
+
+  /* 牌槽按钮：有牌（code 非 null）时填入牌面并标记 filled */
   function makeSlotButton(attrs, code) {
     var b = document.createElement("button");
     b.type = "button";
@@ -82,14 +95,7 @@
     for (var k in attrs) b.setAttribute(k, attrs[k]);
     if (code !== null && code !== undefined) {
       b.classList.add("filled");
-      var rank = document.createElement("span");
-      rank.className = "card-rank";
-      rank.textContent = Cards.RANK_LABELS[Cards.rankOf(code)];
-      var suit = document.createElement("span");
-      suit.className = "card-suit" + (Cards.isRedSuit(Cards.suitOf(code)) ? " red" : "");
-      suit.textContent = Cards.SUIT_GLYPHS[Cards.suitOf(code)];
-      b.appendChild(rank);
-      b.appendChild(suit);
+      appendCardFace(b, code);
     }
     return b;
   }
@@ -470,13 +476,12 @@
     for (var rank = 12; rank >= 0; rank--) {
       for (var suit = 0; suit < 4; suit++) {
         var code = Cards.make(rank, suit);
-        var label = Cards.label(code);
         var btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "picker-card" + (Cards.isRedSuit(suit) ? " red" : "");
+        btn.className = "picker-card";
         btn.setAttribute("data-code", code);
-        btn.setAttribute("aria-label", label);
-        btn.textContent = label;
+        btn.setAttribute("aria-label", Cards.label(code));
+        appendCardFace(btn, code);
         if (used[code]) {
           btn.disabled = true;
           btn.classList.add("used");
