@@ -100,6 +100,10 @@
     return opts && opts.deadCards ? opts.deadCards : undefined;
   }
 
+  /* 1/w 查表：w ∈ 1..10，免去每局面一次除法 */
+  var INV = new Float64Array(11);
+  (function () { for (var w = 1; w <= 10; w++) INV[w] = 1 / w; })();
+
   /* 单局结算：更新累计量（exact 与 MC 共用逻辑） */
   function tally(scores, P, eq, eq2, win, tie) {
     var best = -1, w = 0;
@@ -108,7 +112,7 @@
       if (s > best) { best = s; w = 1; }
       else if (s === best) w++;
     }
-    var share = 1 / w;
+    var share = INV[w];
     for (i = 0; i < P; i++) {
       if (scores[i] === best) {
         eq[i] += share;
@@ -148,28 +152,43 @@
     var done = 0;
     var idx = new Int32Array(k);
     for (var i = 0; i < k; i++) idx[i] = i;
-    // 本轮需写入 b 的最低槽位：开局为 0（全写）；推进后仅变化位 i..k-1
-    // 需重写，低位保持上轮已写入的正确值
-    var lo = 0;
 
-    function evalBoard() {
+    function evalBoard(b0, b1, b2, b3, b4) {
       for (var q = 0; q < P; q++) {
-        scores[q] = ev(holes[2 * q], holes[2 * q + 1], b[0], b[1], b[2], b[3], b[4]);
+        scores[q] = ev(holes[2 * q], holes[2 * q + 1], b0, b1, b2, b3, b4);
       }
       tally(scores, P, eq, null, win, tie);
     }
 
+    /* 里程计式枚举：状态即 idx，天然可暂停恢复。
+     * 不变量：进入外层循环时 b[slots[0..k-2]] 与 idx[0..k-2] 同步；
+     * 最末轮（变化最快的位）走快路径——每步仅 1 次牌槽写入 + 1 次评估，
+     * 耗尽后进位重置并重写高位变化的槽位。 */
     function runSlice(deadlineTs) {
-      // 里程计式枚举：状态即 idx，天然可暂停恢复。
-      // 先评估当前组合、再推进、最后检查时限——保证恢复时不重不漏。
+      if (k === 0) {
+        if (done === 0) { evalBoard(b[0], b[1], b[2], b[3], b[4]); done = 1; }
+        return true;
+      }
+      if (done === 0) {
+        for (var j0 = 0; j0 < k - 1; j0++) b[slots[j0]] = avail[idx[j0]];
+      }
+      var last = slots[k - 1];
       for (;;) {
-        for (var j = lo; j < k; j++) b[slots[j]] = avail[idx[j]];
-        evalBoard();
-        done++;
-        var i = nextCombination(idx, n);
+        while (idx[k - 1] < n) {
+          b[last] = avail[idx[k - 1]];
+          evalBoard(b[0], b[1], b[2], b[3], b[4]);
+          done++;
+          idx[k - 1]++;
+          if ((done & 2047) === 0 && performance.now() >= deadlineTs) return false;
+        }
+        // 最末轮耗尽 → 高位进位；全部组合完成则返回 true
+        var i = k - 2;
+        while (i >= 0 && idx[i] === n - k + i) i--;
         if (i < 0) return true;
-        lo = i;
-        if ((done & 2047) === 0 && performance.now() >= deadlineTs) return false;
+        idx[i]++;
+        var v = idx[i];
+        for (var j = i + 1; j < k; j++) idx[j] = v + (j - i);
+        for (j = i; j < k - 1; j++) b[slots[j]] = avail[idx[j]]; // 重写变化的高位槽
       }
     }
 
@@ -224,8 +243,9 @@
       var d = 0, i2;
       for (i2 = 0; i2 < holeN; i2++) holes[holeSlots[i2]] = avail[d++];
       for (i2 = 0; i2 < boardN; i2++) b[boardSlots[i2]] = avail[d++];
+      var b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3], b4 = b[4]; // 每迭代读一次而非每玩家
       for (var q = 0; q < P; q++) {
-        scores[q] = ev(holes[2 * q], holes[2 * q + 1], b[0], b[1], b[2], b[3], b[4]);
+        scores[q] = ev(holes[2 * q], holes[2 * q + 1], b0, b1, b2, b3, b4);
       }
       iters++;
       tally(scores, P, eq, eq2, win, tie);
@@ -314,15 +334,24 @@
         if (!main) {
           if (!preview.runSlice(deadlineTs)) return false;
           main = createExactTask(players, board, opts);
+          return false; // 本片收手：让 UI 先渲染预览结果，下一片再开始枚举
         }
         return main.runSlice(deadlineTs);
       },
-      /* 预览阶段 result() 恒非空，progress 仅在精确阶段有意义 */
       progress: function () { return main ? main.progress() : 0; },
+      /* 精确枚举期间持续返回预览结果（provisional）——数字全程可见，
+       * 枚举完成后被精确值无缝替换 */
       result: function () {
-        var r = main ? main.result() : preview.result();
-        if (r && !main) r.provisional = true;
-        return r;
+        if (!main) {
+          var rp = preview.result();
+          if (rp) rp.provisional = true;
+          return rp;
+        }
+        var r = main.result();
+        if (r) return r;
+        var pp = preview.result();
+        if (pp) pp.provisional = true;
+        return pp;
       },
     };
   }

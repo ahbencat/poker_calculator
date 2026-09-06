@@ -58,7 +58,7 @@ python3 test/oracle.py --full  # 追加翻牌前向量 V3–V6（约 1–3 分�
 index.html              页面骨架（经典 <script> 加载，file:// 兼容）
 css/style.css           移动优先样式
 js/cards.js             牌编码（rank<<2|suit）、输入校验
-js/evaluator.js         7 张牌评估器（掩码 + 3 张 8KB 查表，约 2600 万次/秒）
+js/evaluator.js         7 张牌评估器（无分支状态机 + 花色车道计数 + 8KB 查表，约 1950 万次/秒）
 js/engine.js            胜率引擎（createTask 统一入口：模式选择、精确枚举 / 蒙特卡洛 / 预览切换）
 js/app.js               UI 状态机、分片调度（MessageChannel）、底部弹层选择器
 server.py               静态托管（标准库；屏蔽点文件；默认对局域网开放）
