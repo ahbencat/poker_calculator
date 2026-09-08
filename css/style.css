@@ -259,17 +259,23 @@ button {
 /* ---------- 结果 ---------- */
 
 .bar {
+  display: flex;
   height: 10px;
   border-radius: 5px;
-  background: #e8ecef;
+  background: #e8ecef; /* 负 = 底色段 */
   margin: 12px 0 8px;
   overflow: hidden;
 }
 
-.bar-fill {
+.bar-win {
   height: 100%;
-  border-radius: 5px;
   background: linear-gradient(90deg, #1a9a4b, var(--accent));
+  transition: width 0.25s ease;
+}
+
+.bar-tie {
+  height: 100%;
+  background: #d9a514;
   transition: width 0.25s ease;
 }
 
@@ -280,7 +286,7 @@ button {
   gap: 8px;
 }
 
-.equity {
+.win-pct {
   font-size: 22px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -426,5 +432,5 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bar-fill, .card-slot { transition: none; }
+  .bar-win, .bar-tie, .card-slot { transition: none; }
 }
