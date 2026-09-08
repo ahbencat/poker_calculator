@@ -104,14 +104,22 @@
 
   function renderBoard() {
     els.boardRow.textContent = "";
-    for (var i = 0; i < 5; i++) {
-      var btn = makeSlotButton(
-        { "data-board": i, "aria-label": "选择公牌·" + BOARD_STREETS[i] },
-        state.board[i]
-      );
-      if (i === 2 || i === 3) btn.classList.add("street-gap");
-      els.boardRow.appendChild(btn);
-    }
+    // 街道分组：翻牌 3 张一组，转牌、河牌各自成组，组间细分隔线
+    var groups = [[0, 1, 2], [3], [4]];
+    groups.forEach(function (group, gi) {
+      if (gi > 0) {
+        var sep = document.createElement("span");
+        sep.className = "street-sep";
+        els.boardRow.appendChild(sep);
+      }
+      group.forEach(function (i) {
+        var btn = makeSlotButton(
+          { "data-board": i, "aria-label": "选择公牌·" + BOARD_STREETS[i] },
+          state.board[i]
+        );
+        els.boardRow.appendChild(btn);
+      });
+    });
   }
 
   /* renderPlayers 重建 DOM 的同时缓存每行的结果元素引用，
@@ -126,13 +134,9 @@
       row.className = "player";
       row.setAttribute("data-idx", i);
 
-      var head = document.createElement("div");
-      head.className = "player-head";
-
-      var name = document.createElement("span");
-      name.className = "player-name";
-      name.textContent = "玩家 " + (i + 1);
-      head.appendChild(name);
+      // 主行：手牌 ×2 + 进度条 + 胜率 + 删除
+      var main = document.createElement("div");
+      main.className = "player-main";
 
       var holeWrap = document.createElement("div");
       holeWrap.className = "hole-cards";
@@ -148,18 +152,7 @@
         }
         holeWrap.appendChild(btn);
       }
-      head.appendChild(holeWrap);
-
-      var remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "remove-btn";
-      remove.setAttribute("data-remove", i);
-      remove.setAttribute("aria-label", "删除玩家 " + (i + 1));
-      remove.textContent = "×";
-      if (state.players.length <= MIN_PLAYERS) remove.disabled = true;
-      head.appendChild(remove);
-
-      row.appendChild(head);
+      main.appendChild(holeWrap);
 
       var bar = document.createElement("div");
       bar.className = "bar";
@@ -171,19 +164,36 @@
       tieFill.style.width = "0%";
       bar.appendChild(winFill);
       bar.appendChild(tieFill);
-      row.appendChild(bar);
+      main.appendChild(bar);
 
-      var nums = document.createElement("div");
-      nums.className = "nums";
       var winNum = document.createElement("span");
       winNum.className = "win-pct";
       winNum.textContent = "—";
+      main.appendChild(winNum);
+
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "remove-btn";
+      remove.setAttribute("data-remove", i);
+      remove.setAttribute("aria-label", "删除玩家 " + (i + 1));
+      remove.textContent = "×";
+      if (state.players.length <= MIN_PLAYERS) remove.disabled = true;
+      main.appendChild(remove);
+
+      row.appendChild(main);
+
+      // 副行：玩家名 + 平/负（或未参与提示）
+      var sub = document.createElement("div");
+      sub.className = "player-sub";
+      var name = document.createElement("span");
+      name.className = "p-name";
+      name.textContent = "玩家 " + (i + 1);
+      sub.appendChild(name);
       var detail = document.createElement("span");
-      detail.className = "detail";
+      detail.className = "p-detail";
       detail.textContent = detailHint(i);
-      nums.appendChild(winNum);
-      nums.appendChild(detail);
-      row.appendChild(nums);
+      sub.appendChild(detail);
+      row.appendChild(sub);
 
       playerEls[i] = { win: winFill, tie: tieFill, num: winNum, detail: detail };
       els.playerList.appendChild(row);
@@ -232,7 +242,7 @@
       el.win.style.width = winPct + "%";
       el.tie.style.width = tiePct + "%";
       el.num.textContent = winPct + "%";
-      el.detail.textContent = "胜 " + winPct + "% · 平 " + tiePct + "% · 负 " + losePct + "%";
+      el.detail.textContent = "平 " + tiePct + "% · 负 " + losePct + "%"; // 胜已在主行 win-pct
     }
     state.lastApplied = res;
   }
