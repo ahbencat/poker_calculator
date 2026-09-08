@@ -163,25 +163,29 @@
 
       var bar = document.createElement("div");
       bar.className = "bar";
-      var fill = document.createElement("div");
-      fill.className = "bar-fill";
-      fill.style.width = "0%";
-      bar.appendChild(fill);
+      var winFill = document.createElement("div");
+      winFill.className = "bar-win";
+      winFill.style.width = "0%";
+      var tieFill = document.createElement("div");
+      tieFill.className = "bar-tie";
+      tieFill.style.width = "0%";
+      bar.appendChild(winFill);
+      bar.appendChild(tieFill);
       row.appendChild(bar);
 
       var nums = document.createElement("div");
       nums.className = "nums";
-      var equity = document.createElement("span");
-      equity.className = "equity";
-      equity.textContent = "—";
+      var winNum = document.createElement("span");
+      winNum.className = "win-pct";
+      winNum.textContent = "—";
       var detail = document.createElement("span");
       detail.className = "detail";
       detail.textContent = detailHint(i);
-      nums.appendChild(equity);
+      nums.appendChild(winNum);
       nums.appendChild(detail);
       row.appendChild(nums);
 
-      playerEls[i] = { fill: fill, equity: equity, detail: detail };
+      playerEls[i] = { win: winFill, tie: tieFill, num: winNum, detail: detail };
       els.playerList.appendChild(row);
     });
   }
@@ -203,8 +207,9 @@
 
   function resetResults() {
     for (var i = 0; i < playerEls.length; i++) {
-      playerEls[i].fill.style.width = "0%";
-      playerEls[i].equity.textContent = "—";
+      playerEls[i].win.style.width = "0%";
+      playerEls[i].tie.style.width = "0%";
+      playerEls[i].num.textContent = "—";
       playerEls[i].detail.textContent = detailHint(i);
     }
   }
@@ -220,9 +225,14 @@
       var p = res.players[j];
       var el = playerEls[state.resultMap[j]];
       if (!el) continue;
-      el.fill.style.width = (p.equity * 100).toFixed(1) + "%";
-      el.equity.textContent = (p.equity * 100).toFixed(1) + "%";
-      el.detail.textContent = "胜 " + (p.win * 100).toFixed(1) + "% · 平 " + (p.tie * 100).toFixed(1) + "%";
+      // 原始概率三口径：胜 / 平 / 负（负 = 100 − 胜 − 平），三者恒为 100
+      var winPct = (p.win * 100).toFixed(1);
+      var tiePct = (p.tie * 100).toFixed(1);
+      var losePct = (100 - p.win * 100 - p.tie * 100).toFixed(1);
+      el.win.style.width = winPct + "%";
+      el.tie.style.width = tiePct + "%";
+      el.num.textContent = winPct + "%";
+      el.detail.textContent = "胜 " + winPct + "% · 平 " + tiePct + "% · 负 " + losePct + "%";
     }
     state.lastApplied = res;
   }
