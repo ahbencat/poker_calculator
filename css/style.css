@@ -214,11 +214,13 @@ button {
 }
 .card-corner.red { color: var(--red); }
 
-/* 小尺寸牌面的角标缩放：手牌 40×56、公牌 ~50×64（弹层 56×76 用默认 28/24） */
+/* 小尺寸牌面的角标缩放：手牌 40×56、公牌 ~50×64、弹层 ~40×56（默认 28/24 给大牌面） */
 .hole-cards .card-corner.rank { font-size: 16px; }
 .hole-cards .card-corner.suit { font-size: 13px; }
 .board-row .card-corner.rank { font-size: 18px; }
 .board-row .card-corner.suit { font-size: 15px; }
+.picker-card .card-corner.rank { font-size: 19px; }
+.picker-card .card-corner.suit { font-size: 16px; }
 
 /* ---------- 玩家 ---------- */
 
@@ -392,20 +394,33 @@ button {
   font-weight: 600;
 }
 
+/* 8 列 = 每行 2 个点数（4 花色对齐），13 个点数共 7 行，手机竖屏一屏可见全部 52 张。
+   第 5 列是 12px 空列，作左右两半的中缝；中缝正好落在内容区水平中点，用背景渐变画分隔线 */
 .picker-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, 1fr) 12px repeat(4, 1fr);
   justify-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 5px;
+  padding: 6px 10px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  background-image: linear-gradient(
+    to right,
+    transparent calc(50% - 0.5px),
+    var(--border) calc(50% - 0.5px),
+    var(--border) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
 }
+
+/* 每行右半边的首张牌跳过中缝列（稀疏排布不回填，第 5 列保持为空） */
+.picker-card:nth-child(8n + 5) { grid-column: 6; }
 
 .picker-card {
   position: relative;
-  width: 56px;
-  height: 76px;
+  width: 100%;
+  max-width: 52px;
+  aspect-ratio: 5 / 7;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: linear-gradient(160deg, #ffffff 0%, #f6f8f9 100%);

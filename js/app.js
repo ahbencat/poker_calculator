@@ -487,15 +487,18 @@
       : "选择公牌 · " + BOARD_STREETS[t.slot];
   }
 
+  // 8 列网格按行填充：每行放两个点数，使左半列自上而下 A K Q J T 9 8、右半列 7 6 5 4 3 2
+  var PICKER_RANKS = [12, 5, 11, 4, 10, 3, 9, 2, 8, 1, 7, 0, 6];
+
   function renderPickerGrid() {
     var t = state.picker;
     if (!t) return;
     var used = usedCardsExcept(t);
     var own = currentSlotCard(t);
     els.pickerGrid.textContent = "";
-    for (var rank = 12; rank >= 0; rank--) {
+    for (var i = 0; i < PICKER_RANKS.length; i++) {
       for (var suit = 0; suit < 4; suit++) {
-        var code = Cards.make(rank, suit);
+        var code = Cards.make(PICKER_RANKS[i], suit);
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "picker-card";
