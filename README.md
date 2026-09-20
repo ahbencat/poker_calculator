@@ -1,93 +1,121 @@
-# 德州扑克在线胜率计算器
+# Texas Hold'em Online Equity Calculator
 
-简体中文 | [English](README.en.md)
+English | [简体中文](README.zh.md)
 
-网页版德州扑克（Texas Hold'em）胜率计算器：为 2–10 位玩家选择手牌与公牌，
-实时计算每位玩家的获胜概率。全部计算在浏览器本地完成，服务器仅托管静态文件。
+**Poker odds / win-rate calculator for Texas Hold'em (NLHE)** — pick hole cards and
+community cards for 2–10 players and get each player's win / tie / lose probabilities
+in real time. Win probabilities come from **exact enumeration** (preflop included,
+no sampling error) with a Monte Carlo fallback; runs 100% in the browser as
+**vanilla JavaScript** — zero dependencies, no build step, works offline
+(double-click `index.html`). The UI supports both English and Chinese
+(toggle in the top bar).
 
-> - 核心概率计算算法（模式选择、7 张牌评估器、精确枚举、蒙特卡洛）的详细实现与流程图
->   见 [docs/algorithm.md](docs/algorithm.md)
-> - 依赖事实清单与工具链要求见 [docs/dependencies.md](docs/dependencies.md)
+> - Implementation details and flowcharts of the core algorithms (mode selection, 7-card
+>   evaluator, exact enumeration, Monte Carlo) — see
+>   [docs/algorithm.md](docs/algorithm.md) (Chinese)
+> - Dependency inventory and toolchain requirements — see
+>   [docs/dependencies.md](docs/dependencies.md) (Chinese)
 
-## 功能
+## Features
 
-- **玩家增减**：任意增删玩家（最少 2 位，最多 10 位）；增删未参与的玩家、
-  给新玩家选第 1 张牌等**不改变计算输入的操作不触发重算**、不打断进行中的计算
-- **计算门槛**：至少 2 位玩家各 2 张手牌后才开始计算（不论桌人数），
-  只计算手牌齐全的玩家，未齐玩家完全不参与
-- **精确手牌**：52 张牌选择器，已选的牌全局自动置灰
-- **公牌可选**：翻牌 / 转牌 / 河牌任意阶段，未发的牌自动补齐
-- **精确优先的计算策略**（全自动，无感知切换）：
-  - 参与玩家手牌齐全 → **精确枚举**（含翻牌前，结果精确无误差）
-  - 翻牌前等重枚举 → 先出 100ms 蒙特卡洛预览，完成后无缝替换为精确值
-  - 手牌未知的场景由蒙特卡洛兜底（引擎能力，页面交互不触发）
-- **牌桌界面**：真实扑克牌版式（左上点数 / 右下花色的竖版白卡面）、
-  绿毛毡桌面 + 木质围栏公牌区；手机竖屏优先（单列布局、底部弹层选牌、
-  触控目标 ≥ 44px）
+- **Add / remove players** (2 min, 10 max); actions that don't change the computation
+  inputs — adding or removing non-participating players, picking a new player's first
+  card — **do not trigger recalculation** and never interrupt a running computation
+- **Calculation gate**: starts once at least 2 players each have both hole cards,
+  regardless of table size; only players with complete hole cards participate
+- **Exact hole cards**: 52-card picker, used cards are automatically greyed out globally
+- **Optional community cards**: works at any street (flop / turn / river);
+  undealt cards are auto-completed
+- **Exact-first computation strategy** (fully automatic):
+  - All participants' hole cards known → **exact enumeration** (including preflop,
+    results are exact)
+  - Heavy enumerations (preflop) → a 100ms Monte Carlo preview first, then a seamless
+    swap to the exact result
+  - Unknown hole cards fall back to Monte Carlo (engine capability; not triggered by
+    page interaction)
+- **Bilingual UI**: Chinese / English toggle in the top bar; the choice is remembered
+- **Poker table UI**: authentic card faces (portrait white cards with rank top-left,
+    suit bottom-right), green felt table with wood-rail community card area;
+    mobile-portrait first (single column, bottom-sheet card picker, ≥44px touch targets)
 
-## 运行
+## Running
 
 ```bash
-# 方式一：静态托管（推荐，手机可通过局域网访问）
-python3 server.py            # 默认 0.0.0.0:8000，打印局域网地址
-python3 server.py 9000       # 指定端口
-python3 server.py 8000 127.0.0.1   # 仅本机可访问
+# Option 1: static hosting (recommended; phones can access via LAN)
+python3 server.py            # default 0.0.0.0:8000, prints the LAN address
+python3 server.py 9000       # custom port
+python3 server.py 8000 127.0.0.1   # localhost only
 
-# 方式二：直接双击 index.html（file:// 协议同样可用）
+# Option 2: just double-click index.html (works over file://)
 ```
 
-无任何构建步骤与第三方依赖（服务器为 Python 3.7+ 标准库）。
+No build step, no third-party dependencies (server is Python 3.7+ stdlib).
 
-## 测试与验证
+## Testing & Verification
 
 ```bash
-node test/run_tests.js         # 28 项测试：牌型自检、精确向量 V1–V6、MC 确定性、组合任务、死牌等
-python3 test/oracle.py         # Python 独立朴素实现对拍（快速：校验和 + V1/V2）
-python3 test/oracle.py --full  # 追加翻牌前向量 V3–V6（约 1–3 分钟）
-python3 test/server_smoke.py   # server.py 冒烟：静态资源 200 + 点文件 404
-node test/bench.js             # 性能基准（改热路径前后对比）
+node test/run_tests.js         # 28 tests: hand self-checks, exact vectors V1–V6, MC determinism, composite tasks, dead cards
+python3 test/oracle.py         # Independent naive Python cross-check (fast: checksum + V1/V2)
+python3 test/oracle.py --full  # Adds preflop vectors V3–V6 (~1–3 minutes)
+python3 test/server_smoke.py   # server.py smoke test: static assets 200 + dotfiles 404
+node test/bench.js             # Performance benchmark (before/after hot-path changes)
 ```
 
-关键校验值（JS 与 Python 双实现对拍确认）：
+Key verification values (confirmed by dual JS/Python implementations):
 
-- 前 5000 个字典序 7 张组合的评分总和 = `37575761920`
-- 精确向量（equity = 胜 + 平局均分，花色必须钉死，AA vs KK 随花色重叠度在 81.26%–82.64% 间变化）：
+- Score sum of the first 5000 lexicographic 7-card combinations = `37575761920`
+- Exact vectors (equity = win + tie split; suits must be pinned — AA vs KK varies
+  between 81.26% and 82.64% depending on suit overlap):
 
-| 向量 | 输入 | 结果 |
+| Vector | Input | Result |
 |---|---|---|
-| V1 河牌 | AsAh vs KdKc，公牌 2c 7h 9d Js | AA **95.4545%** |
-| V2 翻牌 | 同上，公牌 2c 7h 9d | AA **91.6162%** |
-| V3 翻牌前 | AsAh vs KdKc | AA **81.2555%** |
-| V4 翻牌前 | AsAh vs KsKh（花色全重叠） | AA **82.6366%** |
-| V5 翻牌前 | AsKs vs QdQc | AKs **46.2145%** |
-| V6 三人 | AsAh / KdKc / QsQh | **66.5054% / 18.8755% / 14.6191%** |
+| V1 river | AsAh vs KdKc, board 2c 7h 9d Js | AA **95.4545%** |
+| V2 flop | same, board 2c 7h 9d | AA **91.6162%** |
+| V3 preflop | AsAh vs KdKc | AA **81.2555%** |
+| V4 preflop | AsAh vs KsKh (full suit overlap) | AA **82.6366%** |
+| V5 preflop | AsKs vs QdQc | AKs **46.2145%** |
+| V6 3-way | AsAh / KdKc / QsQh | **66.5054% / 18.8755% / 14.6191%** |
 
-## 项目结构
+## Project Structure
 
 ```
-index.html              页面骨架（经典 <script> 加载，file:// 兼容）
-css/style.css           移动优先样式（牌桌氛围、竖版扑克牌版式）
-js/cards.js             牌编码（rank<<2|suit）、输入校验（含死牌）
-js/evaluator.js         7 张牌评估器（无分支状态机 + 花色车道计数，约 1950 万次/秒）
-js/engine.js            胜率引擎（createTask 统一入口：模式选择、精确枚举 / 蒙特卡洛 / 预览切换）
-js/app.js               UI 状态机、分片调度（MessageChannel）、重算抑制、底部弹层选择器
-server.py               静态托管（标准库；屏蔽点文件；默认对局域网开放）
-docs/                   算法文档（含流程图）+ 依赖清单
-test/                   28 项 Node 测试 + Python 对拍 + 服务器冒烟 + 性能基准
+index.html              page skeleton (classic <script> tags, file:// compatible)
+css/style.css           mobile-first styles (poker-table theme, portrait card faces)
+js/cards.js             card encoding (rank<<2|suit), input validation (incl. dead cards)
+js/evaluator.js         7-card evaluator (branchless state machine + suit lane counting, ~19.5M evals/s)
+js/engine.js            equity engine (createTask entry: mode selection, exact / Monte Carlo / preview)
+js/app.js               UI state machine, sliced scheduling (MessageChannel), recalc suppression, bilingual strings
+server.py               static hosting (stdlib; dotfiles blocked; open to LAN by default)
+docs/                   algorithm docs (with flowcharts) + dependency inventory
+test/                   28 Node tests + Python cross-check + server smoke + benchmark
 ```
 
-## 技术要点
+## Technical Highlights
 
-- **评估器**：4 个"恰好出现 k 次"rank 掩码无分支状态机 + 花色 4 字节车道计数
-  （无同花时零掩码构建），3 张 8192 项小表（顺子/popcount/top5），单次评估零分配；
-  判定顺序利用"7 张内同花不与四条/葫芦共存"
-- **精确枚举**：里程计式组合枚举（最末轮快路径），状态可暂停恢复；
-  每 2048 局面检查一次时限
-- **蒙特卡洛**：部分偏置 Fisher–Yates、mulberry32 可种子化、样本方差置信区间、
-  时间预算 650ms / SE<0.15% 提前停
-- **重算抑制**：输入签名（齐牌玩家手牌 + 公牌）判定，签名不变的操作零重算；
-  行 DOM 重建时回放最近结果
-- **UI 不卡顿**：计算以 12ms 分片经 MessageChannel 让出主线程（避开 setTimeout 4ms 钳制）；
-  翻牌前重枚举期间持续显示预览值，精确值就绪后无缝替换
-- **file:// 兼容**：刻意不使用 ES Modules、Worker 与任何第三方依赖
-  （file:// 下被浏览器同源策略拦截）
+- **Evaluator**: 4 branchless "seen exactly k times" rank-mask state machines + 4-byte
+  suit lane counting (zero mask building without a flush), 3 small 8192-entry tables
+  (straight/popcount/top5); zero allocation per call. Uses the invariant that a flush
+  cannot coexist with quads or a full house within 7 cards
+- **Exact enumeration**: odometer-style combination enumeration (innermost-digit fast
+  path), pausable/resumable; time check every 2048 boards
+- **Monte Carlo**: partial Fisher–Yates, seedable mulberry32, sample-variance confidence
+  interval, 650ms budget / early stop at SE<0.15%
+- **Recalc suppression**: keyed on an input signature (participants' hole cards + board);
+  signature-preserving actions cost zero recomputation; the last rendered result is
+  replayed when player-row DOM is rebuilt
+- **Responsive UI**: computation runs in 12ms slices yielded via MessageChannel
+  (avoids the setTimeout 4ms clamp); heavy preflop enumerations keep showing the preview
+  value until the exact result is ready
+- **file:// compatible**: deliberately avoids ES Modules, Workers and any third-party
+  dependencies (blocked by same-origin policy over file://)
+
+## License
+
+Released under the [MIT License](LICENSE).
+
+---
+
+**Keywords**: Texas Hold'em · NLHE · poker odds calculator · poker equity calculator ·
+win rate / win probability · hand ranking · 德州扑克 · 德克萨斯扑克 · 胜率计算器 ·
+胜率 概率 计算 · Monte Carlo simulation · exact enumeration · vanilla JavaScript ·
+no-build static site · offline web app
