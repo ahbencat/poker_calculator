@@ -79,6 +79,22 @@ button {
   text-overflow: ellipsis;
 }
 
+.lang-btn {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lang-btn:active { background: rgba(255, 255, 255, 0.12); }
+
 /* ---------- 主体 ---------- */
 
 .container {
