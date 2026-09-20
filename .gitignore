@@ -1,6 +1,9 @@
 # 本地工具配置（.claude/settings.json 含 API token，严禁入库）
 .claude/
 
+# Claude 项目说明（含内网部署等私人信息，不入库）
+CLAUDE.md
+
 # Python 缓存
 __pycache__/
 *.pyc
